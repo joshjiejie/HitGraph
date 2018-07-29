@@ -32,7 +32,7 @@ module spmv_PP # (
         end
       end
        
-    scatter_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .URAM_DATA_W(URAM_DATA_W))
+    spmv_scatter_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .URAM_DATA_W(URAM_DATA_W))
     scatter_unit (
         .clk(clk),
         .rst(rst),
@@ -45,7 +45,7 @@ module spmv_PP # (
         .output_valid(output_valid)
     );
 
-    gather_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .PAR_SIZE_W(PAR_SIZE_W))
+    spmv_gather_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .PAR_SIZE_W(PAR_SIZE_W))
     gather_unit (
         .clk(clk),
         .rst(rst),
@@ -59,24 +59,6 @@ module spmv_PP # (
         .par_active(par_active)
     );
     
-endmodule
-
-module spmv_combine_unit (
-    input wire clk,
-    input wire [31:0] update_A,
-    input wire [31:0] update_B,
-    output wire [31:0] combined_update
-);
-
-fp_add adder(              
-    .aclk(clk),
-    .s_axis_a_tvalid(1'b1),        
-    .s_axis_a_tdata(update_A),
-    .s_axis_b_tvalid(1'b1),
-    .s_axis_b_tdata(update_B),    
-    .m_axis_result_tready(1'b1),      
-    .m_axis_result_tdata(combined_update)              
-);
 endmodule
 
 
@@ -212,7 +194,7 @@ module pr_PP # (
         end
       end
        
-    scatter_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .URAM_DATA_W(URAM_DATA_W))
+    pr_scatter_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .URAM_DATA_W(URAM_DATA_W))
     scatter_unit (
         .clk(clk),
         .rst(rst),
@@ -225,7 +207,7 @@ module pr_PP # (
         .output_valid(output_valid)
     );
 
-    gather_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .PAR_SIZE_W(PAR_SIZE_W), .URAM_DATA_W(URAM_DATA_W))
+    pr_gather_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .PAR_SIZE_W(PAR_SIZE_W), .URAM_DATA_W(URAM_DATA_W))
     gather_unit (
         .clk(clk),
         .rst(rst),
@@ -240,25 +222,6 @@ module pr_PP # (
     );
     
 endmodule
-
-module pr_combine_unit (
-    input wire clk,
-    input wire [31:0] update_A,
-    input wire [31:0] update_B,
-    output wire [31:0] combined_update
-);
-
-fp_add adder(              
-    .aclk(clk),
-    .s_axis_a_tvalid(1'b1),        
-    .s_axis_a_tdata(update_A),
-    .s_axis_b_tvalid(1'b1),
-    .s_axis_b_tdata(update_B),    
-    .m_axis_result_tready(1'b1),      
-    .m_axis_result_tdata(combined_update)              
-);
-endmodule
-
 
 module pr_gather_pipe # (
     parameter PIPE_DEPTH = 3,
@@ -401,7 +364,7 @@ module sssp_PP # (
         end
       end
        
-    scatter_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .URAM_DATA_W(URAM_DATA_W))
+    sssp_scatter_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .URAM_DATA_W(URAM_DATA_W))
     scatter_unit (
         .clk(clk),
         .rst(rst),
@@ -416,8 +379,8 @@ module sssp_PP # (
 
 	wire [31:0] dest_attr;	
     
-	gather_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .PAR_SIZE_W(PAR_SIZE_W), .URAM_DATA_W(URAM_DATA_W))
-    gather_unit (
+	sssp_gather_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .PAR_SIZE_W(PAR_SIZE_W), .URAM_DATA_W(URAM_DATA_W))
+  gather_unit (
         .clk(clk),
         .rst(rst),
         .update_value(input_word_reg[63:32]),
@@ -441,18 +404,6 @@ module sssp_PP # (
 	
 	assign forward_output = {buffer_Dout_Addr, buffer_Dout};
 	
-endmodule
-
-
-module sssp_combine_unit (
-    input wire clk,
-    input wire [31:0] update_A,
-    input wire [31:0] update_B,
-    output reg [31:0] combined_update
-);    
-    always @(posedge clk) begin
-        combined_update <= (update_A>update_B) ? update_B : update_A;   
-    end 
 endmodule
 
 
@@ -560,7 +511,7 @@ module wcc_PP # (
         end
       end
        
-    scatter_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .URAM_DATA_W(URAM_DATA_W))
+    wcc_scatter_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .URAM_DATA_W(URAM_DATA_W))
     scatter_unit (
         .clk(clk),
         .rst(rst),
@@ -575,7 +526,7 @@ module wcc_PP # (
 	
 	wire [31:0] dest_attr;
 	
-    gather_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .PAR_SIZE_W(PAR_SIZE_W), .URAM_DATA_W(URAM_DATA_W))
+    wcc_gather_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .PAR_SIZE_W(PAR_SIZE_W), .URAM_DATA_W(URAM_DATA_W))
     gather_unit (
         .clk(clk),
         .rst(rst),
@@ -600,18 +551,6 @@ module wcc_PP # (
 	
 	assign forward_output = {buffer_Dout_Addr, buffer_Dout};
 endmodule
-
-module wcc_combine_unit (
-    input wire clk,
-    input wire [31:0] update_A,
-    input wire [31:0] update_B,
-    output reg [31:0] combined_update
-);    
-    always @(posedge clk) begin
-        combined_update <= (update_A>update_B) ? update_B : update_A;   
-    end 
-endmodule
-
 
 module wcc_gather_pipe # (
     parameter PIPE_DEPTH = 1,
