@@ -1,3 +1,66 @@
+module spmv_PP # (
+    parameter PIPE_DEPTH = 5,
+    parameter URAM_DATA_W = 32,
+    parameter PAR_SIZE_W = 10,
+    parameter EDGE_W = 96
+)(
+    input wire                      clk,
+    input wire                      rst,     
+    input wire [1:0]                control,
+    input wire [URAM_DATA_W-1:0]    buffer_Din,
+    input wire                      buffer_Din_valid,   
+    input wire [EDGE_W-1:0]         input_word,
+    input wire [0:0]                input_valid,
+    output wire [URAM_DATA_W-1:0]   buffer_Dout,
+    output wire [PAR_SIZE_W-1:0]    buffer_Dout_Addr,
+    output wire                     buffer_Dout_valid,    
+    output wire [63:0]              output_word,    
+    output wire [0:0]               output_valid,
+    output wire [0:0]               par_active  
+);
+    
+    reg [EDGE_W-1:0] input_word_reg;
+    reg [0:0]  input_valid_reg; 
+    
+     always @(posedge clk) begin
+        if (rst) begin
+            input_word_reg <= 0;
+            input_valid_reg <= 0;
+        end  else begin
+            input_word_reg <= input_word;
+            input_valid_reg <= input_valid;
+        end
+      end
+       
+    scatter_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .URAM_DATA_W(URAM_DATA_W))
+    scatter_unit (
+        .clk(clk),
+        .rst(rst),
+        .edge_weight(input_word_reg[95:64]),
+        .src_attr(buffer_Dout),
+        .edge_dest(input_word_reg[63:32]),
+        .input_valid(input_valid_reg && buffer_Din_valid && control==1),    
+        .update_value(output_word[63:32]),
+        .update_dest(output_word[31:0]),    
+        .output_valid(output_valid)
+    );
+
+    gather_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .PAR_SIZE_W(PAR_SIZE_W))
+    gather_unit (
+        .clk(clk),
+        .rst(rst),
+        .update_value(input_word_reg[63:32]),
+        .update_dest(input_word_reg[31:0]),
+        .dest_attr(buffer_Din),
+        .input_valid(input_valid_reg && buffer_Din_valid && control==2),    
+        .WData(buffer_Dout),
+        .WAddr(buffer_Dout_Addr),    
+        .Wvalid(buffer_Dout_valid),
+        .par_active(par_active)
+    );
+    
+endmodule
+
 module spmv_combine_unit (
     input wire clk,
     input wire [31:0] update_A,
@@ -115,7 +178,68 @@ module spmv_scatter_pipe # (
     
 endmodule
 
+module pr_PP # (
+    parameter PIPE_DEPTH = 5,
+    parameter URAM_DATA_W = 64,
+    parameter PAR_SIZE_W = 10,
+    parameter EDGE_W = 64
+)(
+    input wire                      clk,
+    input wire                      rst,     
+    input wire [1:0]                control,
+    input wire [URAM_DATA_W-1:0]    buffer_Din,
+    input wire                      buffer_Din_valid,   
+    input wire [EDGE_W-1:0]         input_word,
+    input wire [0:0]                input_valid,
+    output wire [URAM_DATA_W-1:0]   buffer_Dout,
+    output wire [PAR_SIZE_W-1:0]    buffer_Dout_Addr,
+    output wire                     buffer_Dout_valid,    
+    output wire [63:0]              output_word,    
+    output wire [0:0]               output_valid,
+    output wire [0:0]               par_active  
+);
+    
+    reg [EDGE_W-1:0] input_word_reg;
+    reg [0:0]  input_valid_reg; 
+    
+     always @(posedge clk) begin
+        if (rst) begin
+            input_word_reg <= 0;
+            input_valid_reg <= 0;
+        end  else begin
+            input_word_reg <= input_word;
+            input_valid_reg <= input_valid;
+        end
+      end
+       
+    scatter_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .URAM_DATA_W(URAM_DATA_W))
+    scatter_unit (
+        .clk(clk),
+        .rst(rst),
+        .edge_weight(),
+        .src_attr(buffer_Dout),
+        .edge_dest(input_word_reg[63:32]),
+        .input_valid(input_valid_reg && buffer_Din_valid && control==1),    
+        .update_value(output_word[63:32]),
+        .update_dest(output_word[31:0]),    
+        .output_valid(output_valid)
+    );
 
+    gather_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .PAR_SIZE_W(PAR_SIZE_W), .URAM_DATA_W(URAM_DATA_W))
+    gather_unit (
+        .clk(clk),
+        .rst(rst),
+        .update_value(input_word_reg[63:32]),
+        .update_dest(input_word_reg[31:0]),
+        .dest_attr(buffer_Din),
+        .input_valid(input_valid_reg && buffer_Din_valid && control==2),    
+        .WData(buffer_Dout),
+        .WAddr(buffer_Dout_Addr),    
+        .Wvalid(buffer_Dout_valid),
+        .par_active(par_active)
+    );
+    
+endmodule
 
 module pr_combine_unit (
     input wire clk,
@@ -234,6 +358,92 @@ module pr_scatter_pipe # (
     
 endmodule
 
+module sssp_PP # (
+    parameter PIPE_DEPTH = 5,
+    parameter URAM_DATA_W = 32,
+    parameter PAR_SIZE_W = 10,
+    parameter EDGE_W = 64
+)(
+    input wire                      clk,
+    input wire                      rst,     
+    input wire [1:0]                control,
+    input wire [URAM_DATA_W-1:0]    buffer_Din,
+    input wire                      buffer_Din_valid,   
+    input wire [EDGE_W-1:0]         input_word,
+    input wire [0:0]                input_valid,
+    output wire [URAM_DATA_W-1:0]   buffer_Dout,
+    output wire [PAR_SIZE_W-1:0]    buffer_Dout_Addr,
+    output wire                     buffer_Dout_valid,    
+    output wire [63:0]              output_word,    
+    output wire [0:0]               output_valid,
+    output wire [0:0]               par_active,
+	input wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_input0,
+	input wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_input1,
+	input wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_input2,
+	input wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_input3,
+	input wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_input4,
+	input wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_input5,
+	input wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_input6,
+	input wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_input7,
+	output wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_output
+);
+    
+    reg [EDGE_W-1:0] input_word_reg;
+    reg [0:0]  input_valid_reg; 
+    
+     always @(posedge clk) begin
+        if (rst) begin
+            input_word_reg <= 0;
+            input_valid_reg <= 0;
+        end  else begin
+            input_word_reg <= input_word;
+            input_valid_reg <= input_valid;
+        end
+      end
+       
+    scatter_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .URAM_DATA_W(URAM_DATA_W))
+    scatter_unit (
+        .clk(clk),
+        .rst(rst),
+        .edge_weight(input_word_reg[63:48]),
+        .src_attr(buffer_Dout),
+        .edge_dest(input_word_reg[47:24]),
+        .input_valid(input_valid_reg && buffer_Din_valid && control==1),    
+        .update_value(output_word[63:32]),
+        .update_dest(output_word[31:0]),    
+        .output_valid(output_valid)
+    );
+
+	wire [31:0] dest_attr;	
+    
+	gather_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .PAR_SIZE_W(PAR_SIZE_W), .URAM_DATA_W(URAM_DATA_W))
+    gather_unit (
+        .clk(clk),
+        .rst(rst),
+        .update_value(input_word_reg[63:32]),
+        .update_dest(input_word_reg[31:0]),
+        .dest_attr(dest_attr),
+        .input_valid(input_valid_reg && buffer_Din_valid && control==2),    
+        .WData(buffer_Dout),
+        .WAddr(buffer_Dout_Addr),    
+        .Wvalid(buffer_Dout_valid),
+        .par_active(par_active)
+    );    
+	
+	assign dest_attr = ((control==2) && (input_word_reg[PAR_SIZE_W-1:0]==forward_input0[PAR_SIZE_W+URAM_DATA_W-1:URAM_DATA_W])) ? forward_input0[URAM_DATA_W-1:0] :
+					   ((control==2) && (input_word_reg[PAR_SIZE_W-1:0]==forward_input1[PAR_SIZE_W+URAM_DATA_W-1:URAM_DATA_W])) ? forward_input1[URAM_DATA_W-1:0] :	
+					   ((control==2) && (input_word_reg[PAR_SIZE_W-1:0]==forward_input2[PAR_SIZE_W+URAM_DATA_W-1:URAM_DATA_W])) ? forward_input2[URAM_DATA_W-1:0] :
+					   ((control==2) && (input_word_reg[PAR_SIZE_W-1:0]==forward_input3[PAR_SIZE_W+URAM_DATA_W-1:URAM_DATA_W])) ? forward_input3[URAM_DATA_W-1:0] :
+					   ((control==2) && (input_word_reg[PAR_SIZE_W-1:0]==forward_input4[PAR_SIZE_W+URAM_DATA_W-1:URAM_DATA_W])) ? forward_input4[URAM_DATA_W-1:0] :
+					   ((control==2) && (input_word_reg[PAR_SIZE_W-1:0]==forward_input5[PAR_SIZE_W+URAM_DATA_W-1:URAM_DATA_W])) ? forward_input5[URAM_DATA_W-1:0] :
+					   ((control==2) && (input_word_reg[PAR_SIZE_W-1:0]==forward_input6[PAR_SIZE_W+URAM_DATA_W-1:URAM_DATA_W])) ? forward_input6[URAM_DATA_W-1:0] :
+					   ((control==2) && (input_word_reg[PAR_SIZE_W-1:0]==forward_input7[PAR_SIZE_W+URAM_DATA_W-1:URAM_DATA_W])) ? forward_input7[URAM_DATA_W-1:0] : buffer_Din;
+	
+	assign forward_output = {buffer_Dout_Addr, buffer_Dout};
+	
+endmodule
+
+
 module sssp_combine_unit (
     input wire clk,
     input wire [31:0] update_A,
@@ -307,6 +517,89 @@ module sssp_scatter_pipe # (
     end    
 endmodule
 
+module wcc_PP # (
+    parameter PIPE_DEPTH = 5,
+    parameter URAM_DATA_W = 32,
+    parameter PAR_SIZE_W = 10,
+    parameter EDGE_W = 64
+)(
+    input wire                      clk,
+    input wire                      rst,     
+    input wire [1:0]                control,
+    input wire [URAM_DATA_W-1:0]    buffer_Din,
+    input wire                      buffer_Din_valid,   
+    input wire [EDGE_W-1:0]         input_word,
+    input wire [0:0]                input_valid,
+    output wire [URAM_DATA_W-1:0]   buffer_Dout,
+    output wire [PAR_SIZE_W-1:0]    buffer_Dout_Addr,
+    output wire                     buffer_Dout_valid,    
+    output wire [63:0]              output_word,    
+    output wire [0:0]               output_valid,
+    output wire [0:0]               par_active,
+	input wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_input0,
+	input wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_input1,
+	input wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_input2,
+	input wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_input3,
+	input wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_input4,
+	input wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_input5,
+	input wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_input6,
+	input wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_input7,
+	output wire [PAR_SIZE_W+URAM_DATA_W-1:0]	forward_output
+);
+    
+    reg [EDGE_W-1:0] input_word_reg;
+    reg [0:0]  input_valid_reg; 
+    
+     always @(posedge clk) begin
+        if (rst) begin
+            input_word_reg <= 0;
+            input_valid_reg <= 0;
+        end  else begin
+            input_word_reg <= input_word;
+            input_valid_reg <= input_valid;
+        end
+      end
+       
+    scatter_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .URAM_DATA_W(URAM_DATA_W))
+    scatter_unit (
+        .clk(clk),
+        .rst(rst),
+        .edge_weight(),
+        .src_attr(buffer_Dout),
+        .edge_dest(input_word_reg[63:32]),
+        .input_valid(input_valid_reg && buffer_Din_valid && control==1),    
+        .update_value(output_word[63:32]),
+        .update_dest(output_word[31:0]),    
+        .output_valid(output_valid)
+    );
+	
+	wire [31:0] dest_attr;
+	
+    gather_pipe # (.PIPE_DEPTH (PIPE_DEPTH), .PAR_SIZE_W(PAR_SIZE_W), .URAM_DATA_W(URAM_DATA_W))
+    gather_unit (
+        .clk(clk),
+        .rst(rst),
+        .update_value(input_word_reg[63:32]),
+        .update_dest(input_word_reg[31:0]),
+        .dest_attr(dest_attr),
+        .input_valid(input_valid_reg && buffer_Din_valid && control==2),    
+        .WData(buffer_Dout),
+        .WAddr(buffer_Dout_Addr),    
+        .Wvalid(buffer_Dout_valid),
+        .par_active(par_active)
+    );
+    
+	assign dest_attr = ((control==2) && (input_word_reg[PAR_SIZE_W-1:0]==forward_input0[PAR_SIZE_W+URAM_DATA_W-1:URAM_DATA_W])) ? 					forward_input0[URAM_DATA_W-1:0] :
+					   ((control==2) && (input_word_reg[PAR_SIZE_W-1:0]==forward_input1[PAR_SIZE_W+URAM_DATA_W-1:URAM_DATA_W])) ? forward_input1[URAM_DATA_W-1:0] :	
+					   ((control==2) && (input_word_reg[PAR_SIZE_W-1:0]==forward_input2[PAR_SIZE_W+URAM_DATA_W-1:URAM_DATA_W])) ? forward_input2[URAM_DATA_W-1:0] :
+					   ((control==2) && (input_word_reg[PAR_SIZE_W-1:0]==forward_input3[PAR_SIZE_W+URAM_DATA_W-1:URAM_DATA_W])) ? forward_input3[URAM_DATA_W-1:0] :
+					   ((control==2) && (input_word_reg[PAR_SIZE_W-1:0]==forward_input4[PAR_SIZE_W+URAM_DATA_W-1:URAM_DATA_W])) ? forward_input4[URAM_DATA_W-1:0] :
+					   ((control==2) && (input_word_reg[PAR_SIZE_W-1:0]==forward_input5[PAR_SIZE_W+URAM_DATA_W-1:URAM_DATA_W])) ? forward_input5[URAM_DATA_W-1:0] :
+					   ((control==2) && (input_word_reg[PAR_SIZE_W-1:0]==forward_input6[PAR_SIZE_W+URAM_DATA_W-1:URAM_DATA_W])) ? forward_input6[URAM_DATA_W-1:0] :
+					   ((control==2) && (input_word_reg[PAR_SIZE_W-1:0]==forward_input7[PAR_SIZE_W+URAM_DATA_W-1:URAM_DATA_W])) ? forward_input7[URAM_DATA_W-1:0] : buffer_Din;
+	
+	assign forward_output = {buffer_Dout_Addr, buffer_Dout};
+endmodule
 
 module wcc_combine_unit (
     input wire clk,
